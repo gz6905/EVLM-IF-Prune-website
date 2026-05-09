@@ -1,0 +1,1439 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="description"
+      content="IF-Prune: Information-Flow Guided Token Pruning for Efficient Vision-Language Models"
+    />
+    <meta
+      name="keywords"
+      content="IF-Prune, Token Pruning, Vision-Language Models, VLM Efficiency, Information Bottleneck, Variational Inference"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>
+      IF-Prune: Information-Flow Guided Token Pruning for Efficient VLMs
+    </title>
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Playfair+Display:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./static/css/bulma.min.css" />
+    <link rel="stylesheet" href="./static/css/bulma-carousel.min.css" />
+    <link rel="stylesheet" href="./static/css/bulma-slider.min.css" />
+    <link rel="stylesheet" href="./static/css/fontawesome.all.min.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css"
+    />
+    <link rel="stylesheet" href="./static/css/index.css" />
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script defer src="./static/js/fontawesome.all.min.js"></script>
+    <script src="./static/js/bulma-carousel.min.js"></script>
+    <script src="./static/js/bulma-slider.min.js"></script>
+    <script src="./static/js/index.js"></script>
+
+    <style>
+      :root {
+        --indigo: #4f46e5;
+        --indigo-light: #eef2ff;
+        --indigo-dark: #3730a3;
+        --surface: #f8faff;
+        --text-main: #1e1b4b;
+        --text-body: #4b5563;
+        --border: #d1d5db;
+        --emerald: #059669;
+        --emerald-light: #d1fae5;
+        --rose-light: #ffe4e6;
+        --rose-border: #e11d48;
+        --amber-light: #fef3c7;
+        --amber-border: #d97706;
+        --slate: #475569;
+      }
+      body {
+        font-family: "Space Grotesk", sans-serif;
+        color: var(--text-main);
+      }
+      .publication-title {
+        font-family: "Playfair Display", serif !important;
+        font-weight: 800 !important;
+        letter-spacing: -0.02em;
+        line-height: 1.15 !important;
+      }
+      .title {
+        font-family: "Playfair Display", serif !important;
+        color: var(--text-main);
+      }
+      .content p,
+      .content li {
+        font-family: "Space Grotesk", sans-serif;
+        color: var(--text-body);
+        line-height: 1.7;
+        font-size: 0.96rem;
+      }
+      .section-bar {
+        width: 50px;
+        height: 4px;
+        background: var(--indigo);
+        border-radius: 2px;
+        margin: 0 auto 26px auto;
+      }
+      .venue-pill {
+        display: inline-block;
+        background: var(--indigo);
+        color: white;
+        font-size: 0.82rem;
+        font-weight: 700;
+        padding: 5px 18px;
+        border-radius: 20px;
+        letter-spacing: 0.04em;
+        margin-top: 12px;
+      }
+      .org-logos {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 36px;
+        flex-wrap: wrap;
+        margin-top: 18px;
+        margin-bottom: 10px;
+      }
+      .org-logos img {
+        height: 55px;
+        object-fit: contain;
+        opacity: 0.85;
+        transition: opacity 0.2s;
+      }
+      .org-logos img:hover {
+        opacity: 1;
+      }
+
+      .callout {
+        border-radius: 10px;
+        padding: 20px 24px;
+        margin-bottom: 20px;
+        border-left: 4px solid;
+        font-size: 0.94rem;
+      }
+      .callout.indigo {
+        background: var(--indigo-light);
+        border-color: var(--indigo);
+      }
+      .callout.emerald {
+        background: var(--emerald-light);
+        border-color: var(--emerald);
+      }
+      .callout.amber {
+        background: var(--amber-light);
+        border-color: var(--amber-border);
+      }
+      .callout.rose {
+        background: var(--rose-light);
+        border-color: var(--rose-border);
+      }
+      .callout p {
+        margin-bottom: 0 !important;
+        color: var(--text-main) !important;
+      }
+      .callout .callout-label {
+        font-weight: 700;
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin-bottom: 5px;
+        display: block;
+      }
+      .callout.indigo .callout-label {
+        color: var(--indigo-dark);
+      }
+      .callout.emerald .callout-label {
+        color: #065f46;
+      }
+      .callout.amber .callout-label {
+        color: #92400e;
+      }
+
+      .contrib-card {
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 24px;
+        height: 100%;
+        border-top: 3px solid var(--indigo);
+      }
+      .contrib-card h4 {
+        font-family: "Space Grotesk", sans-serif !important;
+        font-weight: 700 !important;
+        font-size: 1.05rem !important;
+        margin-bottom: 10px !important;
+      }
+      .contrib-card p {
+        font-size: 0.92rem;
+        line-height: 1.6;
+      }
+
+      .method-block {
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 28px;
+        margin-bottom: 28px;
+      }
+      .method-block h3 {
+        font-family: "Space Grotesk", sans-serif !important;
+        font-weight: 700 !important;
+        font-size: 1.15rem !important;
+        margin-bottom: 14px !important;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .pr-table {
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 2px 10px rgba(79, 70, 229, 0.07);
+        border: 1px solid var(--border);
+      }
+      .pr-table table {
+        margin-bottom: 0 !important;
+      }
+      .pr-table thead th {
+        background: var(--text-main) !important;
+        color: white !important;
+        font-weight: 600;
+        font-size: 0.78rem;
+        padding: 10px 7px;
+        border: none !important;
+        text-align: center !important;
+      }
+      .pr-table thead th:first-child {
+        text-align: left !important;
+      }
+      .pr-table tbody td {
+        text-align: center;
+        padding: 8px 7px;
+        font-size: 0.82rem;
+        border-color: var(--border) !important;
+      }
+      .pr-table tbody td:first-child {
+        text-align: left;
+        font-weight: 500;
+      }
+      .pr-table .ours-row {
+        background: var(--indigo-light) !important;
+      }
+      .pr-table .ours-row td {
+        font-weight: 600;
+        color: var(--indigo-dark);
+      }
+      .pr-table .ref-row {
+        background: #fafaff;
+      }
+      .pr-table .sep-row td {
+        padding: 0;
+        height: 2px;
+        background: var(--border);
+      }
+
+      .stat-row {
+        display: flex;
+        justify-content: center;
+        gap: 28px;
+        flex-wrap: wrap;
+        padding: 24px 0;
+      }
+      .stat-pill {
+        text-align: center;
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 16px 24px;
+      }
+      .stat-pill .stat-num {
+        font-family: "Playfair Display", serif;
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: var(--indigo);
+        line-height: 1.1;
+      }
+      .stat-pill .stat-desc {
+        font-size: 0.8rem;
+        color: var(--text-body);
+        margin-top: 4px;
+      }
+
+      .fig-box {
+        background: #fafafa;
+        border: 1px dashed var(--border);
+        border-radius: 10px;
+        padding: 16px;
+        text-align: center;
+      }
+      .fig-box img {
+        max-width: 100%;
+        border-radius: 6px;
+      }
+      .fig-cap {
+        font-size: 0.84rem;
+        color: var(--text-body);
+        margin-top: 10px;
+        line-height: 1.5;
+        max-width: 85%;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      pre {
+        font-family: "JetBrains Mono", monospace !important;
+        font-size: 0.82rem !important;
+        border-radius: 10px !important;
+        border: 1px solid var(--border) !important;
+      }
+      .hero.teaser .hero-body {
+        padding-top: 0;
+      }
+      @media (max-width: 768px) {
+        .stat-row {
+          gap: 14px;
+        }
+        .stat-pill {
+          padding: 12px 16px;
+        }
+        .org-logos {
+          gap: 20px;
+        }
+        .org-logos img {
+          height: 40px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ==================== HERO ==================== -->
+    <section class="hero">
+      <div class="hero-body">
+        <div class="container is-max-desktop">
+          <div class="columns is-centered">
+            <div class="column has-text-centered">
+              <h1 class="title is-1 publication-title">
+                IF-Prune: Information-Flow Guided<br />Token Pruning for
+                Efficient<br />Vision-Language Models
+              </h1>
+              <div class="venue-pill">CVPR 2026</div>
+              <div
+                class="is-size-5 publication-authors"
+                style="margin-top: 18px"
+              >
+                <span class="author-block"
+                  ><a href="https://github.com/heliossun">Guohao Sun</a
+                  ><sup>1,2*</sup>,</span
+                >
+                <span class="author-block"
+                  >Yufei Wang<sup>1&dagger;</sup>,</span
+                >
+                <span class="author-block">Sizhuo Ma<sup>1</sup>,</span>
+                <span class="author-block">Yuege Xie<sup>1</sup>,</span>
+                <span class="author-block">Yuting Cheng<sup>1</sup>,</span>
+                <span class="author-block"
+                  ><a href="https://ztao.cc/index.html">Zhiqiang Tao</a
+                  ><sup>2&dagger;</sup>,</span
+                >
+                <span class="author-block">Jian Wang<sup>1&dagger;</sup></span>
+              </div>
+              <div
+                class="is-size-5 publication-authors"
+                style="margin-top: 8px"
+              >
+                <span class="author-block"><sup>1</sup>Snap Inc.,</span>
+                <span class="author-block"
+                  ><sup>2</sup>Rochester Institute of Technology</span
+                >
+              </div>
+              <div
+                class="is-size-6 publication-authors"
+                style="margin-top: 5px; color: var(--text-body)"
+              >
+                <span class="author-block"
+                  ><sup>*</sup>Work done as intern at Snap Inc.</span
+                >&nbsp;&nbsp;
+                <span class="author-block"
+                  ><sup>&dagger;</sup>Corresponding authors.</span
+                >
+              </div>
+              <div class="org-logos">
+                <img src="./static/images/logo_snap.png" alt="Snap Inc." />
+                <img src="./static/images/logo_rit.png" alt="RIT" />
+              </div>
+              <div class="column has-text-centered" style="margin-top: 8px">
+                <div class="publication-links">
+                  <span class="link-block">
+                    <a
+                      href="#"
+                      class="external-link button is-normal is-rounded is-dark"
+                    >
+                      <span class="icon"><i class="fas fa-file-pdf"></i></span
+                      ><span>Paper</span>
+                    </a>
+                  </span>
+                  <span class="link-block">
+                    <a
+                      href="https://github.com/snap-research/EVLM-IF-Prune"
+                      class="external-link button is-normal is-rounded is-dark"
+                    >
+                      <span class="icon"><i class="fab fa-github"></i></span
+                      ><span>Code</span>
+                    </a>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TEASER ==================== -->
+    <section class="hero teaser">
+      <div class="container is-max-desktop">
+        <div class="hero-body">
+          <!-- TODO: Replace with Figure 1b from the paper (inference pipeline diagram).
+           Save as: ./static/images/teaser.png -->
+          <div class="fig-box">
+            <img
+              src="./static/images/teaser.png"
+              alt="SGP vs IF-Prune comparison and inference pipeline"
+            />
+          </div>
+          <h2
+            class="subtitle has-text-centered"
+            style="margin-top: 18px; font-size: 1.05rem; line-height: 1.6"
+          >
+            <b>IF-Prune</b> uses a variational information bottleneck in a small
+            VLM to estimate visual token importance via KL divergence, enabling
+            the large VLM to retain <b>95%</b> of its original performance with
+            only <b>5%</b> of visual tokens — a <b>40% reduction</b>
+            in computational cost.
+          </h2>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== KEY STATS ==================== -->
+    <section class="section" style="padding: 20px 0 36px 0">
+      <div class="container is-max-desktop">
+        <div class="stat-row">
+          <div class="stat-pill">
+            <div class="stat-num">95%</div>
+            <div class="stat-desc">
+              Performance retained<br />with 5% visual tokens
+            </div>
+          </div>
+          <div class="stat-pill">
+            <div class="stat-num">40%</div>
+            <div class="stat-desc">FLOPs reduction<br />vs. full model</div>
+          </div>
+          <div class="stat-pill">
+            <div class="stat-num">+7%</div>
+            <div class="stat-desc">
+              Over previous SOTA<br />across 8 benchmarks
+            </div>
+          </div>
+          <div class="stat-pill">
+            <div class="stat-num">8</div>
+            <div class="stat-desc">Evaluation<br />benchmarks</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== ABSTRACT ==================== -->
+    <section class="section">
+      <div class="container is-max-desktop">
+        <div class="columns is-centered has-text-centered">
+          <div class="column is-four-fifths">
+            <h2 class="title is-3">Abstract</h2>
+            <div class="section-bar"></div>
+            <div class="content has-text-justified">
+              <p>
+                Vision-language models (VLMs) with dynamic-resolution vision
+                encoders achieve strong performance but face significant
+                efficiency challenges due to long input sequences. A common
+                approach is to assess the importance of tokens and prune those
+                that are less informative. Recent methods that use a small VLM
+                to generate importance maps for visual tokens have outperformed
+                existing rule-based and similarity-driven pruning approaches,
+                particularly at high pruning ratios. However, directly using the
+                small VLM remains unreliable, as it relies on aggregated visual
+                attention weights as an importance score, which can lead to
+                noisy guidance when the generated tokens are incorrect.
+              </p>
+              <p>
+                To address this, we invert the approach by having the small VLM
+                detect <b>non-informative</b> visual tokens based on the user's
+                query. By adding a <b>variational information bottleneck</b>
+                to the small VLM, we can approximate the entropy of each visual
+                token to provide pruning guidance. Such a posterior-guided
+                pruning method enables the large VLM to retain its reasoning
+                capacity while improving efficiency.
+              </p>
+              <p>
+                Extensive experiments on eight benchmarks demonstrate the
+                effectiveness of our approach. With only
+                <b>5% of visual tokens retained</b>, the large VLM preserves
+                <b>95%</b> of its original performance, outperforming the state
+                of the art by <b>8%</b>.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== MOTIVATION ==================== -->
+    <section class="section" style="background: var(--surface)">
+      <div class="container is-max-desktop">
+        <h2 class="title is-3 has-text-centered">
+          Why Invert the Pruning Paradigm?
+        </h2>
+        <div class="section-bar"></div>
+        <div class="columns">
+          <div class="column is-6">
+            <div class="callout amber">
+              <span class="callout-label">Problem: Answer-Driven Pruning</span>
+              <p>
+                Existing methods like SGP aggregate attention weights from a
+                small VLM's <b>generated answer tokens</b>
+                to build importance maps. But when the small VLM lacks prior
+                knowledge to answer a query correctly, the importance map
+                becomes noisy and unreliable — retained tokens are either
+                directly tied to wrong answers or irrelevant noise.
+              </p>
+            </div>
+          </div>
+          <div class="column is-6">
+            <div class="callout indigo">
+              <span class="callout-label"
+                >Our Solution: Posterior-Driven Pruning</span
+              >
+              <p>
+                IF-Prune <b>inverts the paradigm</b>: instead of asking a small
+                model to identify important tokens, we train it to approximate
+                the distribution of <b>non-informative tokens</b> via a
+                variational information bottleneck. Tokens with low KL
+                divergence from the prior carry little task-relevant information
+                and are pruned.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== CONTRIBUTIONS ==================== -->
+    <section class="section">
+      <div class="container is-max-desktop">
+        <h2 class="title is-3 has-text-centered">Key Contributions</h2>
+        <div class="section-bar"></div>
+        <div class="columns" style="margin-top: 12px">
+          <div class="column is-4">
+            <div class="contrib-card">
+              <h4>&#x1F9E0; Principled Framework</h4>
+              <p>
+                IF-Prune casts visual token importance estimation as an
+                <b>amortized variational inference</b>
+                problem, using KL divergence between a learned posterior and
+                prior as a principled importance score — moving beyond attention
+                heuristics.
+              </p>
+            </div>
+          </div>
+          <div class="column is-4">
+            <div class="contrib-card">
+              <h4>&#x26A1; One-Pass Pruning</h4>
+              <p>
+                A lightweight, <b>single forward pass</b> of the small VLM
+                produces pruning guidance — no autoregressive decoding needed.
+                Compatible with <b>FlashAttention</b> since no explicit
+                attention weights are required.
+              </p>
+            </div>
+          </div>
+          <div class="column is-4">
+            <div class="contrib-card">
+              <h4>&#x1F504; One Can Serve Many</h4>
+              <p>
+                A single fine-tuned small VLM (InternVL2.5-1B) transfers pruning
+                guidance to larger models (InternVL2-8B, InternVL2-26B)
+                <b>without additional training</b>, enabling scalable
+                deployment.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== METHOD ==================== -->
+    <section class="section" style="background: var(--surface)">
+      <div class="container is-max-desktop">
+        <h2 class="title is-3 has-text-centered">Method</h2>
+        <div class="section-bar"></div>
+
+        <!-- TODO: Replace with Figure 2 from the paper (training pipeline overview).
+         Save as: ./static/images/pipeline.png -->
+        <div class="fig-box" style="margin-bottom: 24px">
+          <img
+            src="./static/images/pipeline.png"
+            alt="IF-Prune training pipeline"
+          />
+        </div>
+        <p class="fig-cap has-text-centered" style="margin-bottom: 32px">
+          <b>Figure 2:</b> Training pipeline. For each sample (X, V, Y), the
+          small-VLM is called twice. <b>1st forward:</b> input X and V, map
+          output V' to latent space via Q<sub>&theta;</sub>, compute KL
+          divergence with shared prior. <b>2nd forward:</b> compute
+          cross-entropy between predicted answer &pi;<sub>&phi;</sub>(Y|X,Z) and
+          ground truth Y.
+        </p>
+
+        <div class="method-block">
+          <h3>&#x1F52C; Variational Information Bottleneck</h3>
+          <div class="content has-text-justified">
+            <p>
+              Given visual embeddings V' = {V'<sub>1</sub>, ..., V'<sub>m</sub>}
+              after the small-VLM forward pass, we map each to a latent variable
+              Z<sub>i</sub> via a token-wise Gaussian posterior:
+            </p>
+            <div
+              class="callout indigo"
+              style="max-width: 500px; margin: 14px auto"
+            >
+              <p style="text-align: center">
+                Q<sub>&theta;</sub>(Z<sub>i</sub> | V'<sub>i</sub>) =
+                N(&mu;<sub>&theta;</sub>(V'<sub>i</sub>), &sigma;<sup>2</sup
+                ><sub>&theta;</sub>(V'<sub>i</sub>))
+              </p>
+            </div>
+            <p>
+              The KL divergence between this posterior and a
+              <b>learnable per-channel prior</b> P(z) = N(&mu;<sub>p</sub>,
+              &sigma;<sup>2</sup><sub>p</sub>) serves as the importance score:
+              tokens deviating strongly from the prior carry higher
+              task-relevant information, while near-prior tokens contribute
+              little and are pruned.
+            </p>
+            <p>
+              A <b>channel-wise gating mechanism</b> with sigmoid activation
+              modulates the posterior mean, upper-bounding how far it can
+              deviate from the prior to stabilize the KL term:
+            </p>
+            <div
+              class="callout indigo"
+              style="max-width: 580px; margin: 14px auto"
+            >
+              <p style="text-align: center">
+                &mu;<sub>&theta;</sub>(V'<sub>i</sub>) =
+                &sigma;(I<sub>&theta;</sub>(V'<sub>i</sub>)) &odot; (V'<sub
+                  >i</sub
+                >
+                - &mu;<sub>p</sub>) + &mu;<sub>p</sub>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="method-block">
+          <h3>&#x1F3AF; Training Objective</h3>
+          <div class="content has-text-justified">
+            <p>The overall loss balances reconstruction and compression:</p>
+            <div
+              class="callout indigo"
+              style="max-width: 620px; margin: 14px auto"
+            >
+              <p style="text-align: center">
+                L = E[log &pi;<sub>&phi;</sub>(Y | X, Z)] - (&beta;/m)
+                &Sigma;<sub>i</sub> KL(Q<sub>&theta;</sub>(Z<sub>i</sub> |
+                V'<sub>i</sub>) || P(z))
+              </p>
+            </div>
+            <p>
+              The reconstruction loss ensures latent tokens preserve sufficient
+              information for accurate answer prediction, while the KL penalty
+              regularizes each token against the prior at the
+              <b>token level</b> (not sequence level), enabling granular
+              importance estimation and adaptive compression. An
+              <b>adaptive KL weighting</b> schedule &beta;(s) = &tau;<sub
+                >max</sub
+              >
+              - (&tau;<sub>max</sub> - &tau;<sub>min</sub>) * min(1, s/&gamma;)
+              stabilizes training.
+            </p>
+          </div>
+        </div>
+
+        <div class="method-block">
+          <h3>&#x2702; Posterior-Guided Pruning at Inference</h3>
+          <div class="content has-text-justified">
+            <p>
+              At inference: <b>(1)</b> Pass text + visual tokens to the
+              small-VLM in a single forward pass. <b>(2)</b> Extract V' from
+              last hidden states (now containing query information via causal
+              attention). <b>(3)</b> Compute per-token KL divergence as
+              importance scores. <b>(4)</b> Retain top-K% tokens by ranked
+              importance, hard-prune the rest (including position embeddings).
+              <b>(5)</b> Forward remaining tokens to the large-VLM for
+              reasoning.
+            </p>
+            <p>
+              The small-VLM (InternVL2.5-1B) shares the same architecture as the
+              large-VLM for consistent visual encoding. The projection module
+              Q<sub>&theta;</sub> consists of two MLP layers plus two learnable
+              prior embeddings (&mu;<sub>p</sub> and &sigma;<sup>2</sup
+              ><sub>p</sub>). The small-VLM is fine-tuned with LoRA for one
+              epoch on a mixture of instruction data from ShareGPT-4V, LLaVA,
+              and DVQA.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== MAIN RESULTS ==================== -->
+    <section class="section">
+      <div class="container is-max-desktop">
+        <h2 class="title is-3 has-text-centered">Results: InternVL2-26B</h2>
+        <div class="section-bar"></div>
+
+        <div
+          class="content has-text-justified"
+          style="max-width: 800px; margin: 0 auto 24px auto"
+        >
+          <p>
+            We evaluate on eight benchmarks spanning OCR/chart understanding
+            (TextVQA, ChartQA), real-world scenarios (MMStar, RealWorldQA), and
+            visual reasoning (MME, MMBench, MM-Vet, GQA). At 5% token retention,
+            IF-Prune preserves <b>95.4%</b> of original performance while SGP
+            and FastV degrade to 88.9% and 67.1%.
+          </p>
+        </div>
+
+        <div class="pr-table" style="margin-bottom: 16px; overflow-x: auto">
+          <table class="table is-fullwidth" style="font-size: 0.78rem">
+            <thead>
+              <tr>
+                <th style="min-width: 100px">Method</th>
+                <th>K</th>
+                <th>L</th>
+                <th>TextVQA</th>
+                <th>ChartQA</th>
+                <th>GQA</th>
+                <th>MMStar</th>
+                <th>MMBench</th>
+                <th>MM-Vet</th>
+                <th>MME</th>
+                <th>RWQA</th>
+                <th>Score %&uarr;</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="ref-row">
+                <td>InternVL2-26B</td>
+                <td>100%</td>
+                <td>-</td>
+                <td>82.45</td>
+                <td>84.92</td>
+                <td>64.89</td>
+                <td>60.08</td>
+                <td>83.46</td>
+                <td>64.00</td>
+                <td>2270</td>
+                <td>67.58</td>
+                <td>100.00%</td>
+              </tr>
+              <tr class="sep-row">
+                <td colspan="12"></td>
+              </tr>
+              <tr>
+                <td>ToMe</td>
+                <td>20%</td>
+                <td>9</td>
+                <td>75.74</td>
+                <td>62.44</td>
+                <td>63.61</td>
+                <td>-</td>
+                <td>81.82</td>
+                <td>52.50</td>
+                <td>2178</td>
+                <td>-</td>
+                <td>94.88%</td>
+              </tr>
+              <tr>
+                <td>FastV</td>
+                <td>20%</td>
+                <td>9</td>
+                <td>75.62</td>
+                <td>71.68</td>
+                <td>61.20</td>
+                <td>53.01</td>
+                <td>78.31</td>
+                <td>45.00</td>
+                <td>2140</td>
+                <td>63.27</td>
+                <td>93.18%</td>
+              </tr>
+              <tr>
+                <td>SGP</td>
+                <td>20%</td>
+                <td>9</td>
+                <td>81.97</td>
+                <td>81.68</td>
+                <td>64.62</td>
+                <td>56.77</td>
+                <td>80.76</td>
+                <td>62.34</td>
+                <td>2258</td>
+                <td>67.50</td>
+                <td>99.15%</td>
+              </tr>
+              <tr class="ours-row">
+                <td>IF-Prune</td>
+                <td>20%</td>
+                <td>9</td>
+                <td>81.48</td>
+                <td>82.60</td>
+                <td>64.56</td>
+                <td>57.46</td>
+                <td>80.58</td>
+                <td>61.01</td>
+                <td>2271</td>
+                <td>66.14</td>
+                <td>99.55%</td>
+              </tr>
+              <tr class="sep-row">
+                <td colspan="12"></td>
+              </tr>
+              <tr>
+                <td>FastV</td>
+                <td>20%</td>
+                <td>0</td>
+                <td>73.42</td>
+                <td>67.32</td>
+                <td>60.68</td>
+                <td>50.55</td>
+                <td>78.26</td>
+                <td>52.66</td>
+                <td>2110</td>
+                <td>60.26</td>
+                <td>90.03%</td>
+              </tr>
+              <tr>
+                <td>SGP</td>
+                <td>20%</td>
+                <td>0</td>
+                <td>81.14</td>
+                <td>80.92</td>
+                <td>64.70</td>
+                <td>56.97</td>
+                <td>80.50</td>
+                <td>61.33</td>
+                <td>2252</td>
+                <td>67.90</td>
+                <td>98.49%</td>
+              </tr>
+              <tr class="ours-row">
+                <td>IF-Prune</td>
+                <td>20%</td>
+                <td>0</td>
+                <td>81.28</td>
+                <td>82.36</td>
+                <td>64.86</td>
+                <td>56.45</td>
+                <td>79.98</td>
+                <td>60.32</td>
+                <td>2263</td>
+                <td>66.54</td>
+                <td>99.19%</td>
+              </tr>
+              <tr class="sep-row">
+                <td colspan="12"></td>
+              </tr>
+              <tr>
+                <td>ToMe</td>
+                <td>5%</td>
+                <td>2</td>
+                <td>51.69</td>
+                <td>28.60</td>
+                <td>57.52</td>
+                <td>-</td>
+                <td>73.09</td>
+                <td>37.70</td>
+                <td>1933</td>
+                <td>-</td>
+                <td>82.33%</td>
+              </tr>
+              <tr>
+                <td>FastV</td>
+                <td>5%</td>
+                <td>2</td>
+                <td>43.84</td>
+                <td>26.10</td>
+                <td>44.90</td>
+                <td>32.65</td>
+                <td>62.33</td>
+                <td>31.60</td>
+                <td>1799</td>
+                <td>44.05</td>
+                <td>75.05%</td>
+              </tr>
+              <tr>
+                <td>SGP</td>
+                <td>5%</td>
+                <td>2</td>
+                <td>78.70</td>
+                <td>71.08</td>
+                <td>62.04</td>
+                <td>50.92</td>
+                <td>73.71</td>
+                <td>49.82</td>
+                <td>2007</td>
+                <td>64.84</td>
+                <td>88.50%</td>
+              </tr>
+              <tr class="ours-row">
+                <td>IF-Prune</td>
+                <td>5%</td>
+                <td>2</td>
+                <td>79.24</td>
+                <td>71.12</td>
+                <td>63.52</td>
+                <td>53.10</td>
+                <td>77.58</td>
+                <td>50.83</td>
+                <td>2189</td>
+                <td>65.62</td>
+                <td><b>95.41%</b></td>
+              </tr>
+              <tr class="sep-row">
+                <td colspan="12"></td>
+              </tr>
+              <tr>
+                <td>FastV</td>
+                <td>5%</td>
+                <td>0</td>
+                <td>20.06</td>
+                <td>24.64</td>
+                <td>43.41</td>
+                <td>32.65</td>
+                <td>36.94</td>
+                <td>21.74</td>
+                <td>1418</td>
+                <td>44.05</td>
+                <td>59.10%</td>
+              </tr>
+              <tr>
+                <td>SGP</td>
+                <td>5%</td>
+                <td>0</td>
+                <td>78.77</td>
+                <td>70.68</td>
+                <td>62.08</td>
+                <td>50.62</td>
+                <td>73.28</td>
+                <td>50.23</td>
+                <td>2028</td>
+                <td>65.10</td>
+                <td>89.25%</td>
+              </tr>
+              <tr class="ours-row">
+                <td>IF-Prune</td>
+                <td>5%</td>
+                <td>0</td>
+                <td>79.04</td>
+                <td>70.96</td>
+                <td>63.53</td>
+                <td>52.49</td>
+                <td>77.23</td>
+                <td>51.42</td>
+                <td>2190</td>
+                <td>66.01</td>
+                <td><b>95.44%</b></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="fig-cap has-text-centered" style="margin-bottom: 30px">
+          <b>Table 1:</b> InternVL2-26B with different pruning methods. K =
+          token retention ratio, L = decoder layer for pruning. <b>Bold</b> =
+          best.
+        </p>
+      </div>
+    </section>
+
+    <!-- ==================== TRANSFERABILITY ==================== -->
+    <section class="section" style="background: var(--surface)">
+      <div class="container is-max-desktop">
+        <h2 class="title is-3 has-text-centered">
+          Transferability: One Can Serve Many
+        </h2>
+        <div class="section-bar"></div>
+        <div
+          class="content has-text-justified"
+          style="max-width: 800px; margin: 0 auto 20px auto"
+        >
+          <p>
+            A single fine-tuned InternVL2.5-1B guides pruning for InternVL2-8B
+            without retraining. At K=5%, IF-Prune achieves 94.03% vs SGP's
+            90.34% (+3.69 points).
+          </p>
+        </div>
+        <div style="max-width: 600px; margin: 0 auto">
+          <div class="pr-table">
+            <table class="table is-fullwidth" style="font-size: 0.84rem">
+              <thead>
+                <tr>
+                  <th>Method</th>
+                  <th>K</th>
+                  <th>GQA</th>
+                  <th>MMStar</th>
+                  <th>MMBench</th>
+                  <th>RWQA</th>
+                  <th>Score %</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="ref-row">
+                  <td>InternVL2-8B</td>
+                  <td>100%</td>
+                  <td>62.70</td>
+                  <td>59.11</td>
+                  <td>81.90</td>
+                  <td>65.10</td>
+                  <td>100%</td>
+                </tr>
+                <tr>
+                  <td>SGP</td>
+                  <td>20%</td>
+                  <td>62.59</td>
+                  <td>56.37</td>
+                  <td>80.67</td>
+                  <td>64.58</td>
+                  <td>98.29%</td>
+                </tr>
+                <tr class="ours-row">
+                  <td>IF-Prune</td>
+                  <td>20%</td>
+                  <td>62.54</td>
+                  <td>56.93</td>
+                  <td>79.64</td>
+                  <td>63.14</td>
+                  <td>97.56%</td>
+                </tr>
+                <tr>
+                  <td>SGP</td>
+                  <td>5%</td>
+                  <td>59.95</td>
+                  <td>50.37</td>
+                  <td>71.22</td>
+                  <td>61.31</td>
+                  <td>90.34%</td>
+                </tr>
+                <tr class="ours-row">
+                  <td>IF-Prune</td>
+                  <td>5%</td>
+                  <td>58.47</td>
+                  <td>53.34</td>
+                  <td>76.46</td>
+                  <td>62.48</td>
+                  <td><b>94.03%</b></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="fig-cap has-text-centered" style="margin-top: 8px">
+            <b>Table 2:</b> Transferability to InternVL2-8B.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== EFFICIENCY ==================== -->
+    <section class="section">
+      <div class="container is-max-desktop">
+        <h2 class="title is-3 has-text-centered">Efficiency Analysis</h2>
+        <div class="section-bar"></div>
+        <div class="columns is-centered">
+          <div class="column is-7">
+            <div class="pr-table" style="overflow-x: auto">
+              <table class="table is-fullwidth" style="font-size: 0.82rem">
+                <thead>
+                  <tr>
+                    <th>Method</th>
+                    <th>K</th>
+                    <th>L</th>
+                    <th>S-F</th>
+                    <th>L-F</th>
+                    <th>FLOPs %&darr;</th>
+                    <th>Score %&uarr;</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="ref-row">
+                    <td>InternVL2-26B</td>
+                    <td>100%</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>117.7T</td>
+                    <td>100.0%</td>
+                    <td>100%</td>
+                  </tr>
+                  <tr>
+                    <td>SGP</td>
+                    <td>20%</td>
+                    <td>9</td>
+                    <td>14.5T</td>
+                    <td>81.4T</td>
+                    <td>81.5%</td>
+                    <td>99.15%</td>
+                  </tr>
+                  <tr>
+                    <td>SGP</td>
+                    <td>5%</td>
+                    <td>2</td>
+                    <td>14.5T</td>
+                    <td>67.5T</td>
+                    <td>69.7%</td>
+                    <td>88.50%</td>
+                  </tr>
+                  <tr>
+                    <td>SGP</td>
+                    <td>5%</td>
+                    <td>0</td>
+                    <td>14.5T</td>
+                    <td>65.4T</td>
+                    <td>67.9%</td>
+                    <td>89.25%</td>
+                  </tr>
+                  <tr class="ours-row">
+                    <td>IF-Prune</td>
+                    <td>20%</td>
+                    <td>9</td>
+                    <td>4.7T</td>
+                    <td>83.4T</td>
+                    <td>74.6%</td>
+                    <td>99.55%</td>
+                  </tr>
+                  <tr class="ours-row">
+                    <td>IF-Prune</td>
+                    <td>5%</td>
+                    <td>2</td>
+                    <td>4.7T</td>
+                    <td>69.3T</td>
+                    <td>62.9%</td>
+                    <td>95.41%</td>
+                  </tr>
+                  <tr class="ours-row">
+                    <td>IF-Prune</td>
+                    <td>5%</td>
+                    <td>0</td>
+                    <td>4.7T</td>
+                    <td>67.3T</td>
+                    <td><b>61.2%</b></td>
+                    <td><b>95.44%</b></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="fig-cap has-text-centered" style="margin-top: 8px">
+              <b>Table 3:</b> FLOPs comparison. IF-Prune uses 3x fewer
+              small-model FLOPs than SGP (single pass vs autoregressive).
+            </p>
+          </div>
+          <div class="column is-5">
+            <div class="pr-table" style="overflow-x: auto">
+              <table class="table is-fullwidth" style="font-size: 0.82rem">
+                <thead>
+                  <tr>
+                    <th>Method</th>
+                    <th>K</th>
+                    <th>Prefill (ms)</th>
+                    <th>Decode (ms)</th>
+                    <th>Tokens/s</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="ref-row">
+                    <td>InternVL2-8B</td>
+                    <td>100%</td>
+                    <td>229.1</td>
+                    <td>55.8</td>
+                    <td>16.9</td>
+                  </tr>
+                  <tr>
+                    <td>SGP</td>
+                    <td>5%</td>
+                    <td>524.5</td>
+                    <td>51.3</td>
+                    <td>16.4</td>
+                  </tr>
+                  <tr class="ours-row">
+                    <td>IF-Prune</td>
+                    <td>5%</td>
+                    <td>238.5</td>
+                    <td>47.6</td>
+                    <td><b>19.5</b></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="fig-cap has-text-centered" style="margin-top: 8px">
+              <b>Table 4:</b> Latency analysis over 5k samples. IF-Prune
+              achieves 2.2x faster prefill than SGP.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== ABLATION ==================== -->
+    <section class="section" style="background: var(--surface)">
+      <div class="container is-max-desktop">
+        <h2 class="title is-3 has-text-centered">Ablation Study</h2>
+        <div class="section-bar"></div>
+        <div
+          class="content has-text-justified"
+          style="max-width: 800px; margin: 0 auto 20px auto"
+        >
+          <p>
+            We ablate the gating activation (sigmoid vs exponential) and KL
+            weighting strategy. Sigmoid gating consistently outperforms
+            exponential (90.80% vs 89.83%), and adaptive KL weighting with
+            schedule &tau;(0.2, 0.5) achieves the best overall score of 91.19%.
+          </p>
+        </div>
+        <div style="max-width: 750px; margin: 0 auto">
+          <div class="pr-table" style="overflow-x: auto">
+            <table class="table is-fullwidth" style="font-size: 0.82rem">
+              <thead>
+                <tr>
+                  <th>&beta;</th>
+                  <th>f(*)</th>
+                  <th>ChartQA</th>
+                  <th>GQA</th>
+                  <th>MMStar</th>
+                  <th>MMBench</th>
+                  <th>TextVQA</th>
+                  <th>MM-Vet</th>
+                  <th>RWQA</th>
+                  <th>Score %</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="ref-row">
+                  <td>-</td>
+                  <td>-</td>
+                  <td>84.92</td>
+                  <td>64.89</td>
+                  <td>60.08</td>
+                  <td>83.46</td>
+                  <td>82.45</td>
+                  <td>64.00</td>
+                  <td>67.58</td>
+                  <td>100%</td>
+                </tr>
+                <tr>
+                  <td>0.5</td>
+                  <td>exp</td>
+                  <td>69.92</td>
+                  <td>63.34</td>
+                  <td>52.25</td>
+                  <td>77.15</td>
+                  <td>78.28</td>
+                  <td>49.63</td>
+                  <td>65.23</td>
+                  <td>89.83%</td>
+                </tr>
+                <tr>
+                  <td>0.5</td>
+                  <td>&sigma;</td>
+                  <td>70.28</td>
+                  <td>63.77</td>
+                  <td>52.58</td>
+                  <td>75.77</td>
+                  <td>78.72</td>
+                  <td>53.30</td>
+                  <td>66.27</td>
+                  <td>90.80%</td>
+                </tr>
+                <tr>
+                  <td>&tau;(0,1)</td>
+                  <td>&sigma;</td>
+                  <td>71.56</td>
+                  <td>63.58</td>
+                  <td>52.61</td>
+                  <td>75.00</td>
+                  <td>78.55</td>
+                  <td>50.50</td>
+                  <td>65.10</td>
+                  <td>90.05%</td>
+                </tr>
+                <tr class="ours-row">
+                  <td>&tau;(0.2,0.5)</td>
+                  <td>&sigma;</td>
+                  <td>70.96</td>
+                  <td>65.53</td>
+                  <td>52.49</td>
+                  <td>77.23</td>
+                  <td>79.04</td>
+                  <td>51.42</td>
+                  <td>66.01</td>
+                  <td><b>91.19%</b></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="fig-cap has-text-centered" style="margin-top: 8px">
+            <b>Table 5:</b> Ablation of gating activation and KL weighting. All
+            with K=5%, L=0 on InternVL2-26B.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== QUALITATIVE ==================== -->
+    <section class="section">
+      <div class="container is-max-desktop">
+        <h2 class="title is-3 has-text-centered">Qualitative Results</h2>
+        <div class="section-bar"></div>
+        <div
+          class="content has-text-justified"
+          style="max-width: 800px; margin: 0 auto 24px auto"
+        >
+          <p>
+            IF-Prune consistently identifies semantically meaningful and
+            question-related visual cues, while SGP primarily localizes tokens
+            tied to the predicted answer. On complex queries requiring broader
+            visual context, IF-Prune's posterior-driven guidance enables the
+            large VLM to answer correctly where SGP fails.
+          </p>
+        </div>
+        <!-- TODO: Replace with Figure 3 (importance map visualization) and Figure 5 (simple vs complex questions).
+         Save as: ./static/images/importance_maps.png and ./static/images/qualitative.png -->
+        <div class="fig-box" style="margin-bottom: 24px">
+          <img
+            src="./static/images/importance_maps.png"
+            alt="Importance map visualization"
+          />
+        </div>
+        <p class="fig-cap has-text-centered" style="margin-bottom: 28px">
+          <b>Figure 3:</b> Visual token importance maps. IF-Prune highlights
+          broader, semantically relevant regions compared to SGP's narrow
+          answer-driven attention.
+        </p>
+        <div class="fig-box">
+          <img
+            src="./static/images/qualitative.png"
+            alt="Simple vs complex question comparison"
+          />
+        </div>
+        <p class="fig-cap has-text-centered">
+          <b>Figure 5:</b> On complex questions, SGP's answer-driven pruning
+          fails while IF-Prune's posterior-driven guidance preserves sufficient
+          visual context for correct reasoning.
+        </p>
+      </div>
+    </section>
+
+    <!-- ==================== PERFORMANCE CURVE ==================== -->
+    <section class="section" style="background: var(--surface)">
+      <div class="container is-max-desktop">
+        <div class="columns is-centered">
+          <div class="column is-6 has-text-centered">
+            <!-- TODO: Replace with Figure 4 from the paper (performance-efficiency curve).
+             Save as: ./static/images/efficiency_curve.png -->
+            <div class="fig-box">
+              <img
+                src="./static/images/efficiency_curve.png"
+                alt="Performance-efficiency curve"
+              />
+            </div>
+            <p class="fig-cap has-text-centered">
+              <b>Figure 4:</b> IF-Prune demonstrates greater stability under
+              progressively higher pruning ratios, preserving accuracy more
+              effectively than SGP and FastV.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== BIBTEX ==================== -->
+    <section class="section" id="BibTeX">
+      <div class="container is-max-desktop content">
+        <h2 class="title has-text-centered">BibTeX</h2>
+        <div class="section-bar"></div>
+        <pre><code>@inproceedings{sun2026ifprune,
+  title     = {IF-Prune: Information-Flow Guided Token Pruning
+               for Efficient Vision-Language Models},
+  author    = {Sun, Guohao and Wang, Yufei and Ma, Sizhuo
+               and Xie, Yuege and Cheng, Yuting
+               and Tao, Zhiqiang and Wang, Jian},
+  booktitle = {Proceedings of the IEEE/CVF Conference on
+               Computer Vision and Pattern Recognition (CVPR)},
+  year      = {2026},
+}</code></pre>
+      </div>
+    </section>
+
+    <!-- ==================== ACKNOWLEDGMENTS ==================== -->
+    <section class="section" style="background: var(--surface)">
+      <div class="container is-max-desktop">
+        <h2 class="title is-4 has-text-centered">Acknowledgments</h2>
+        <div
+          class="content has-text-justified"
+          style="max-width: 700px; margin: 0 auto"
+        >
+          <p>This work was supported by Snap Inc.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== FOOTER ==================== -->
+    <footer class="footer" style="padding: 28px 0">
+      <div class="container">
+        <div class="content has-text-centered">
+          <a
+            class="icon-link"
+            href="https://github.com/snap-research/EVLM-IF-Prune"
+            style="margin: 0 8px"
+          >
+            <i class="fab fa-github" style="font-size: 1.3rem"></i>
+          </a>
+        </div>
+        <div class="columns is-centered">
+          <div class="column is-8">
+            <div
+              class="content has-text-centered"
+              style="font-size: 0.85rem; color: var(--text-body)"
+            >
+              <p>
+                This website is based on the
+                <a href="https://github.com/nerfies/nerfies.github.io"
+                  >Nerfies</a
+                >
+                project page template, licensed under
+                <a
+                  rel="license"
+                  href="http://creativecommons.org/licenses/by-sa/4.0/"
+                  >CC BY-SA 4.0</a
+                >.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>
