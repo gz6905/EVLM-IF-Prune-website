@@ -972,6 +972,29 @@
       </div>
     </section>
 
+    <!-- ==================== PERFORMANCE CURVE ==================== -->
+    <section class="section" style="background: var(--surface)">
+      <div class="container is-max-desktop">
+        <div class="columns is-centered">
+          <div class="column is-6 has-text-centered">
+            <!-- TODO: Replace with Figure 4 from the paper (performance-efficiency curve).
+             Save as: ./static/images/efficiency_curve.png -->
+            <div class="fig-box">
+              <img
+                src="./static/images/efficiency_curve.png"
+                alt="Performance-efficiency curve"
+              />
+            </div>
+            <p class="fig-cap has-text-centered">
+              <b>Figure 4:</b> IF-Prune demonstrates greater stability under
+              progressively higher pruning ratios, preserving accuracy more
+              effectively than SGP and FastV.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- ==================== TRANSFERABILITY ==================== -->
     <section class="section" style="background: var(--surface)">
       <div class="container is-max-desktop">
@@ -1343,29 +1366,6 @@
           fails while IF-Prune's posterior-driven guidance preserves sufficient
           visual context for correct reasoning.
         </p>
-      </div>
-    </section>
-
-    <!-- ==================== PERFORMANCE CURVE ==================== -->
-    <section class="section" style="background: var(--surface)">
-      <div class="container is-max-desktop">
-        <div class="columns is-centered">
-          <div class="column is-6 has-text-centered">
-            <!-- TODO: Replace with Figure 4 from the paper (performance-efficiency curve).
-             Save as: ./static/images/efficiency_curve.png -->
-            <div class="fig-box">
-              <img
-                src="./static/images/efficiency_curve.png"
-                alt="Performance-efficiency curve"
-              />
-            </div>
-            <p class="fig-cap has-text-centered">
-              <b>Figure 4:</b> IF-Prune demonstrates greater stability under
-              progressively higher pruning ratios, preserving accuracy more
-              effectively than SGP and FastV.
-            </p>
-          </div>
-        </div>
       </div>
     </section>
 
